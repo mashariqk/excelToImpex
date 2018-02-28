@@ -22,8 +22,7 @@ public class FileUtils {
         for (Row row : sheet) {
             String url = row.getCell(0).getStringCellValue();
             String searchTerms = row.getCell(1).getStringCellValue();
-            if (rawMap.containsKey(searchTerms)) System.out.println(searchTerms + " is duplicate!");
-            rawMap.put(searchTerms,url);
+            rawMap.put(searchTerms, url);
         }
         return rawMap;
     }
@@ -66,22 +65,25 @@ public class FileUtils {
         writer.close();
     }
 
-    public static void writeUriLines(Map<String, String> reducedMap, Properties properties) throws IOException {
+    public static Map<String, String> writeUriLines(Map<String, String> reducedMap, Properties properties) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(properties.getProperty("output"), true));
         writer.append(uriHeader);
         StringBuffer stringBuffer = new StringBuffer();
+        Map<String, String> redMap = new HashMap<String, String>();
         Set<String> uniqueVals = new HashSet<String>();
         for (Entry entry : reducedMap.entrySet()) {
             //Multiple keys can point to same value, we do not want multiple lines of impex for the same value of URI
             if (uniqueVals.contains(entry.getValue())) {
                 continue;
             } else {
+                redMap.put(entry.getValue().toString(), entry.getKey().toString().toLowerCase().replaceAll(" ", "_"));
                 uniqueVals.add(entry.getValue().toString());
+                stringBuffer.append(";" + entry.getValue() + ";$contentCatalogName-redirectRefID-" + entry.getKey().toString().toLowerCase().replaceAll(" ", "_") + "\n");
             }
-            stringBuffer.append(";" + entry.getValue() + ";$contentCatalogName-redirectRefID-" + entry.getKey().toString().toLowerCase().replaceAll(" ", "_") + "\n");
         }
         writer.append(stringBuffer);
         writer.close();
+        return redMap;
     }
 
     public static void writeBuffer(Properties properties) throws IOException {
@@ -90,12 +92,12 @@ public class FileUtils {
         writer.close();
     }
 
-    public static void writeRedirectLines(Map<String, String> reducedMap, Properties properties) throws IOException {
+    public static void writeRedirectLines(Map<String, String> reducedMap, Map<String, String> helperMap, Properties properties) throws IOException {
         BufferedWriter writer = new BufferedWriter(new FileWriter(properties.getProperty("output"), true));
         writer.append(redHeader);
         StringBuffer stringBuffer = new StringBuffer();
         for (Entry entry : reducedMap.entrySet()) {
-            stringBuffer.append(";;;\"" + entry.getKey() + "\";EXACT;$contentCatalogName-redirectRefID-" + entry.getKey().toString().toLowerCase().replaceAll(" ", "_") + "\n");
+            stringBuffer.append(";;;\"" + entry.getKey() + "\";EXACT;$contentCatalogName-redirectRefID-" + helperMap.get(entry.getValue()) + "\n");
         }
         writer.append(stringBuffer);
         writer.close();
